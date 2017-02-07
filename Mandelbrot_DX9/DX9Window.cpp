@@ -1,47 +1,13 @@
 #include "DX9Window.h"
 
-//Window Procedure
 LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam) {
 
-	switch (Message) {
-
-	case WM_DESTROY: {
-		PostQuitMessage(0);
-		return 0;
-	}
-
-					 break;
-	}
+	switch (Message) { case WM_DESTROY: {return 0; } }
 
 	return DefWindowProc(Window, Message, WParam, LParam);
 }
-/*
-double MapRange(double OldValue, double OldMin, double OldMax, double NewMin, double NewMax) {
 
-	double NewValue = 0, OldRange = 0, NewRange = 0;
-
-	if (OldMin < 0) {
-		if (OldMax >= 0) OldRange = (OldMin*-1) + OldMax;
-		if (OldMax < 0) OldRange = (OldMin*-1) - (OldMax*-1);
-	}
-	if (OldMin >= 0) {
-		if (OldMax >= 0) OldRange = OldMax - OldMin;
-		if (OldMax < 0) OldRange = OldMin + (OldMax*-1);
-	}
-
-	if (NewMin < 0) {
-		if (NewMax >= 0) NewRange = NewMax + (NewMin*-1);
-		if (NewMax < 0) NewRange = (NewMin*-1) - (NewMax*-1);
-	}
-	if (NewMin >= 0) {
-		if (NewMax >= 0) NewRange = NewMax - NewMin;
-		if (NewMax < 0) NewRange = NewMin + (NewMax*-1);
-	}
-
-	return NewValue = ((OldValue / OldRange) * NewRange) + NewMin + 1.0f;
-}
-*/
-DX9_Window::DX9_Window(HINSTANCE Instance, int CmdShow, int* Pos, int* Size) {
+DX9_Window::DX9_Window(HINSTANCE Instance, int CmdShow, std::vector<int> Pos, std::vector<int> Size) {
 
 	ZeroMemory(&this->WindowClass, sizeof(this->WindowClass));
 
@@ -56,10 +22,10 @@ DX9_Window::DX9_Window(HINSTANCE Instance, int CmdShow, int* Pos, int* Size) {
 	RegisterClassEx(&this->WindowClass);
 
 	this->Window = CreateWindowEx(
-		WS_EX_COMPOSITED, // WS_EX_TOPMOST | WS_EX_COMPOSITED | WS_EX_LAYERED | WS_EX_TRANSPARENT WS_EX_CLIENTEDGE
+		WS_EX_COMPOSITED,
 		L"DX9 Window",
 		L"Mandelbrot",
-		WS_SYSMENU, // WS_CAPTION | WS_SYSMENU
+		WS_SYSMENU,
 		Pos[0], Pos[1],
 		Size[0], Size[1] + GetSystemMetrics(SM_CYCAPTION),
 		NULL,
@@ -88,8 +54,8 @@ DX9_Window::DX9_Window(HINSTANCE Instance, int CmdShow, int* Pos, int* Size) {
 	D3DParameters.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	D3DParameters.hDeviceWindow = this->Window;
 	D3DParameters.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-	D3DParameters.MultiSampleType = D3DMULTISAMPLE_NONE;
-	D3DParameters.MultiSampleQuality = NULL;
+	D3DParameters.MultiSampleType = D3DMULTISAMPLE_8_SAMPLES;
+	D3DParameters.MultiSampleQuality = 1;
 	D3DParameters.BackBufferFormat = D3DFMT_A8R8G8B8;
 	D3DParameters.BackBufferWidth = Size[0];
 	D3DParameters.BackBufferHeight = Size[1];
@@ -107,6 +73,20 @@ DX9_Window::DX9_Window(HINSTANCE Instance, int CmdShow, int* Pos, int* Size) {
 	D3DXLine->SetWidth(1);
 	D3DXLine->SetPattern(0xFFFFFFFF);
 	D3DXLine->SetAntialias(false);
+
+	D3DXCreateFont(
+		this->D3DDevice,
+		16,
+		6,
+		FW_NORMAL,
+		1,
+		false,
+		DEFAULT_CHARSET,
+		OUT_DEFAULT_PRECIS,
+		ANTIALIASED_QUALITY,
+		DEFAULT_PITCH | FF_DONTCARE,
+		L"Times New Roman",
+		&this->D3DFont);
 }
 
 
@@ -118,8 +98,18 @@ DX9_Window::~DX9_Window(void) {
 }
 
 void DX9_Window::BeginScene(void) {
-	this->D3DDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, NULL);
+	this->D3DDevice->Clear(NULL, NULL, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, NULL);
 	this->D3DDevice->BeginScene();
+}
+
+void DX9_Window::Render(std::vector<int> MandelPosition, std::vector<int> MandelSize, unsigned long long Zoom, std::vector<long double> Offset, int MaxIterations) {
+	this->FillRect(MandelPosition, MandelSize, D3DCOLOR_ARGB(255, 255, 255, 255));
+	this->DrawMandelBrot(MandelPosition, MandelSize, Zoom, Offset, MaxIterations);
+	this->DrawString(std::vector<int> {5, 5}, std::vector<int> {240, 20}, "Zoom : " + std::to_string(Zoom), D3DCOLOR_ARGB(255, 255, 255, 255));
+	this->DrawString(std::vector<int> {5, 20}, std::vector<int> {240, 20}, "Offset.at(0) : " + std::to_string(Offset.at(0)), D3DCOLOR_ARGB(255, 255, 255, 255));
+	this->DrawString(std::vector<int> {5, 35}, std::vector<int> {240, 20}, "Offset.at(1) : " + std::to_string(Offset.at(1)), D3DCOLOR_ARGB(255, 255, 255, 255));
+	this->DrawString(std::vector<int> {5, 50}, std::vector<int> {240, 20}, "Max Iterations : " + std::to_string(MaxIterations), D3DCOLOR_ARGB(255, 255, 255, 255));
+	this->DrawCrosshair(std::vector<int>{MandelSize.at(0) / 2, MandelSize.at(1) / 2}, 15, D3DCOLOR_ARGB(32, 255, 255, 255));
 }
 
 void DX9_Window::EndScene(void) {
@@ -127,10 +117,10 @@ void DX9_Window::EndScene(void) {
 	this->D3DDevice->Present(NULL, NULL, NULL, NULL);
 }
 
-void DX9_Window::FillRect(int* Position, int* Size, D3DCOLOR Color) {
+void DX9_Window::FillRect(std::vector<int> Position, std::vector<int> Size, D3DCOLOR Color) {
 	D3DRECT Rect = { Position[0], Position[1], (Position[0] + Size[0]), (Position[1] + Size[1]) };
 
-	this->D3DDevice->Clear(1, &Rect, D3DCLEAR_TARGET, Color, 0.0f, 0);
+	this->D3DDevice->Clear(1, &Rect, D3DCLEAR_TARGET, Color, 0.0f, NULL);
 
 }
 
@@ -141,7 +131,7 @@ int DX9_Window::CalcMandelBrot(long double OriginReal, long double OriginImagina
 	long double Imaginary = OriginImaginary;
 	long double Next;
 
-	while ((pow(Real, (long double)2.0) + pow(Imaginary, (long double)2.0) <= (long double)16.0) && Count <= Max_Iterations) {
+	while ((pow(Real, (long double)2.0) + pow(Imaginary, (long double)2.0) <= (long double)4.0) && Count <= Max_Iterations) {
 
 		Next = pow(Real, (long double)2.0) - pow(Imaginary, (long double)2.0) + OriginReal;
 		Imaginary = (long double)2.0 * Real * Imaginary + OriginImaginary;
@@ -156,7 +146,7 @@ int DX9_Window::CalcMandelBrot(long double OriginReal, long double OriginImagina
 
 }
 
-long double MapRange(long double OldValue, long double OldMin, long double OldMax, long double NewMin, long double NewMax) {
+long double DX9_Window::MapRange(long double OldValue, long double OldMin, long double OldMax, long double NewMin, long double NewMax) {
 
 	long double NewValue = 0.0, OldRange = 0.0, NewRange = 0.0;
 
@@ -178,10 +168,10 @@ long double MapRange(long double OldValue, long double OldMin, long double OldMa
 		if (NewMax < 0) NewRange = NewMin + (NewMax*-1);
 	}
 
-	return (long double)NewValue = ((OldValue / OldRange) * NewRange) + NewMin;
+	return NewValue = ((OldValue / OldRange) * NewRange) + NewMin;
 }
 
-void DX9_Window::DrawMandelBrot(int* Pos, int* Size, long double Zoom, long double* Offset, int MaxIterations) {
+void DX9_Window::DrawMandelBrot(std::vector<int> Pos, std::vector<int>  Size, long double Zoom, std::vector<long double> Offset, int MaxIterations) {
 	std::vector<int>CurrentPosition = { Pos[0], Pos[1] };
 	std::vector<int>SinglePixel = { 1, 1 };
 
@@ -199,7 +189,7 @@ void DX9_Window::DrawMandelBrot(int* Pos, int* Size, long double Zoom, long doub
 
 			int Color = this->CalcMandelBrot(RealValue, ImaginaryValue, MaxIterations);
 
-			this->FillRect(&CurrentPosition.front(), &SinglePixel.front(), this->GenerateColors(Color, MaxIterations));
+			this->FillRect(CurrentPosition, SinglePixel, this->GenerateColors(Color, MaxIterations));
 		}
 	}
 }
@@ -207,6 +197,7 @@ void DX9_Window::DrawMandelBrot(int* Pos, int* Size, long double Zoom, long doub
 D3DCOLOR DX9_Window::GenerateColors(int Count, int MaxRange) {
 
 	int R = 0, G = 0, B = 0;
+
 	Count = (int)MapRange(Count, -1, MaxRange, -1, 128);
 
 	if (Count == -1) { R = 0; G = 0; B = 0; }
@@ -231,20 +222,22 @@ D3DCOLOR DX9_Window::GenerateColors(int Count, int MaxRange) {
 	}
 
 	return D3DCOLOR_ARGB(255, R, G, B);
-
 }
 
-void DX9_Window::DrawX(std::vector<int> Pos, int Size, D3DCOLOR color)
+void DX9_Window::DrawCrosshair(std::vector<int> Pos, int Size, D3DCOLOR color)
 {
-	D3DXVECTOR2 points[5];
+	D3DXVECTOR2 Points[2];
 
-	D3DXVECTOR2 d3dpoints[2];
+	Points[0] = D3DXVECTOR2(Pos[0] - Size, Pos[1]);
+	Points[1] = D3DXVECTOR2(Pos[0] + Size, Pos[1]);
+	this->D3DXLine->Draw(Points, 2, color);
 
-	d3dpoints[0] = D3DXVECTOR2(Pos[0] - Size, Pos[1]);
-	d3dpoints[1] = D3DXVECTOR2(Pos[0] + Size, Pos[1]);
-	this->D3DXLine->Draw(d3dpoints, 2, color);
+	Points[0] = D3DXVECTOR2(Pos[0], Pos[1] - Size);
+	Points[1] = D3DXVECTOR2(Pos[0], Pos[1] + Size);
+	this->D3DXLine->Draw(Points, 2, color);
+}
 
-	d3dpoints[0] = D3DXVECTOR2(Pos[0], Pos[1] - Size);
-	d3dpoints[1] = D3DXVECTOR2(Pos[0], Pos[1] + Size);
-	this->D3DXLine->Draw(d3dpoints, 2, color);
+void DX9_Window::DrawString(const std::vector<int> &Pos, const std::vector<int> &Size, const std::string &Text, const D3DCOLOR &Color) {
+	D3DRECT Rect = { Pos[0], Pos[1], (Pos[0] + Size[0]), (Pos[1] + Size[1]) };
+	this->D3DFont->DrawTextA(NULL, Text.c_str(), -1, (RECT*)&Rect, NULL, Color);
 }
