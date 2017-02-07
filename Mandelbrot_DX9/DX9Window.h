@@ -40,5 +40,5 @@ public:
 	D3DCOLOR DX9_Window::GenerateColors(int Count, int MaxRange);
 	void DX9_Window::DrawCrosshair(std::vector<int> Pos, int Size, D3DCOLOR color);
 	long double DX9_Window::MapRange(long double OldValue, long double OldMin, long double OldMax, long double NewMin, long double NewMax);
-	void DX9_Window::DrawString(const std::vector<int> &Pos, const std::vector<int> &Size, const std::string &Text, const D3DCOLOR &Color);
+	void DX9_Window::DrawString(std::vector<int> Pos, std::vector<int> Size, std::string Text, D3DCOLOR Color);
 };

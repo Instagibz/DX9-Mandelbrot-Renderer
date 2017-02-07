@@ -2,7 +2,10 @@
 
 LRESULT CALLBACK WindowProc(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam) {
 
-	switch (Message) { case WM_DESTROY: {return 0; } }
+	switch (Message) {
+
+	case WM_DESTROY: {	PostQuitMessage(0);	return 0; }
+	}
 
 	return DefWindowProc(Window, Message, WParam, LParam);
 }
@@ -237,7 +240,7 @@ void DX9_Window::DrawCrosshair(std::vector<int> Pos, int Size, D3DCOLOR color)
 	this->D3DXLine->Draw(Points, 2, color);
 }
 
-void DX9_Window::DrawString(const std::vector<int> &Pos, const std::vector<int> &Size, const std::string &Text, const D3DCOLOR &Color) {
+void DX9_Window::DrawString(std::vector<int> Pos, std::vector<int> Size, std::string Text, D3DCOLOR Color) {
 	D3DRECT Rect = { Pos[0], Pos[1], (Pos[0] + Size[0]), (Pos[1] + Size[1]) };
 	this->D3DFont->DrawTextA(NULL, Text.c_str(), -1, (RECT*)&Rect, NULL, Color);
 }
